@@ -1,9 +1,12 @@
 # Table of Contents:
-- [1. Necessary dependencies](#Necessary-dependencies)
-- [2. Parent pom](#Parent-pom)
+- [1. Necessary dependencies](#1-necessary-dependencies)
+- [2. Parent pom](#2-parent-pom)
+- [3. Swagger](#3-swagger)
+- [4. Database](#4-database)
+- [5. Configuration](#5-configuration)
+- [6. Catch Exceptions](#6-catch-exceptions)
 
 ## 1. Necessary dependencies
-### 1.1. Foundation dependencies 
 ```
 <dependency>
     <groupId>org.springframework.boot</groupId>
@@ -179,45 +182,9 @@ Explanation:
   - Meaning: Validate by Hibernate, has the same annotations with lombok dependency
   - Usage:
     - assign @NonNull, @Email (import from jakarta.validation, not from lombok) and call Validator.validate(object)
-- 
-### 1.2. Database dependencies (Ex: postgreSql)
-```
-<dependency>
-    <groupId>org.postgresql</groupId>
-    <artifactId>postgresql</artifactId>
-    <scope>runtime</scope>
-</dependency>
+-
 
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-data-jpa</artifactId>
-</dependency>
-```
-Explanation:
-- postgresql
-  - Meaning: PostgreSQL JDBC driver
-  - Scope:
-    - runtime → only needed at runtime
-  - Usage:
-    - Connect application to PostgreSQL database
-- spring-boot-starter-data-jpa
-  - Meaning: JPA + Hibernate for database access
-  - Features:
-    - ORM (Object Relational Mapping)
-    - Repository abstraction
-    - Query methods
-  - Common annotations:
-    - @Entity → map class to table
-    - @Table → define table name
-    - @Id → primary key
-    - @GeneratedValue → auto-generate ID
-    - @Column → map field to column
-    - @Repository → DAO layer
-    - @Transactional → transaction management
-  - Usage:
-    - Perform CRUD operations on database
-
-### 1.3. Security (Ex: postgreSql)
+### 1.2. Security Issues (Ex: postgreSql)
 ```
 <dependency>
     <groupId>org.apache.tomcat.embed</groupId>
@@ -279,4 +246,138 @@ If it is still not found, Maven will try to download it from remote repositories
   - Stable version: 1.2.0
   - Snapshot version: 1.2.0-SNAPSHOT
 
+## 3. Swagger
+### Swagger UI Configuration in Spring Boot (Without Authentication/Authorization)
 
+### Overview
+This guide describes how to configure Swagger UI in a Spring Boot application using `springdoc-openapi`, without implementing authentication or authorization logic.
+
+### Dependencies
+Add the following dependencies to your project:
+
+- `org.springdoc:springdoc-openapi-starter-webmvc-api`
+- `org.springdoc:springdoc-openapi-starter-webmvc-ui`
+
+### Configurations
+
+```
+swagger.api.name=name
+swagger.api.description=description
+swagger.api.version=@project.version@ #read version from pom file
+```
+
+### OpenAPI Bean Configuration
+
+Define an `OpenAPI` bean and configure the following sections:
+
+### 3.1. Info
+Provide basic API metadata:
+- **title**: Name of the API
+- **description**: Short description of the API
+- **version**: API version
+
+### 3.2. Security Requirement
+Define a security requirement:
+- Name: `BearerAuthentication`
+
+### 3.3. Security Scheme
+Configure a security scheme with:
+- **type**
+- **bearerFormat**
+- **scheme**
+
+### 3.4. Components
+Include the following in components:
+- **schemas**
+- **securitySchemes**
+
+### 3.5. SpringDocUtils Customization
+Customize Swagger behavior:
+- Use `removeRequestWrapperToIgnore(...)`
+- Some data types (e.g., `Map` in `RequestBody`) are ignored by default in Swagger UI
+
+### 3.6. Final OpenAPI Object
+Return the configured `OpenAPI` instance with:
+- **securityItem**
+- **components**
+- **info**
+
+---
+
+#### Notes
+- This setup only covers Swagger UI configuration.
+- No authentication or authorization logic is implemented.
+- Security configuration is used for documentation purposes only.
+
+## 4. Database
+```
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <scope>runtime</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+```
+Explanation:
+- postgresql
+  - Meaning: PostgreSQL JDBC driver
+  - Scope:
+    - runtime → only needed at runtime
+  - Usage:
+    - Connect application to PostgreSQL database
+- spring-boot-starter-data-jpa
+  - Meaning: JPA + Hibernate for database access
+  - Features:
+    - ORM (Object Relational Mapping)
+    - Repository abstraction: CRUDRepository, JpaRepository
+    - Query methods
+  - Common annotations:
+    - @Entity → map class to table
+    - @Table → define table name
+    - @Id → primary key
+    - @GeneratedValue → auto-generate ID
+    - @Column → map field to column
+    - @Repository → DAO layer
+    - @Transactional → transaction management
+  - Usage:
+    - Perform CRUD operations on database
+- Config:
+```
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.show-sql=FALSE
+logging.level.org.hibernate.SQL=OFF
+logging.level.org.hibernate.type.descriptor.sql=OFF
+
+spring.datasource.url=your-url
+spring.datasource.username=your-username
+spring.datasource.password=your-password
+
+spring.datasource.hikari.maximum-pool-size=1
+spring.datasource.hikari.connection-timeout=1
+spring.datasource.hikari.minimum-idle=1
+spring.datasource.hikari.idle-timeout=1
+spring.datasource.hikari.pool-name=your-pool-name
+
+```
+
+## 5. Configuration
+```
+server.port=8080
+server.forward-headers-strategy=framework
+spring.application.name=name
+app.base-url=http://localhost:8088
+```
+
+## 6. Catch Exceptions
+- Define a class implement ResponseEntityExceptionHandler and assign with @ControllerAdvice annotation
+- Each method assign @ExceptionHandler(<specific exception.class>) to catch this exception
+- With special exception, need to override some method in ResponseEntityExceptionHandler to catch it: 
+  - MethodArgumentNotValidException
+  - HttpMessageNotReadableException
+  - MissingServletRequestParameterException
+  - HandlerMethodValidationException
